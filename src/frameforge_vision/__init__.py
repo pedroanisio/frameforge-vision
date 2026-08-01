@@ -15,7 +15,7 @@ TWO HALVES, AND ONLY ONE OF THEM NEEDS FRAMEFORGE
 comparison, vectorisation — needs numpy and OpenCV and nothing from FrameForge.
 *Emitting* a document from those measurements needs the authoring SDK.
 
-So this package imports `frameforge.sdk` and `frameforge.rendering` **lazily, at
+So this package imports `frameforge_sdk` and `frameforge_render` **lazily, at
 the call sites that build or rasterise a document** — never at module scope. The
 measurement half therefore works with `frameforge` absent, and the reverse edge
 is lazy too, so neither distribution hard-depends on the other. Install

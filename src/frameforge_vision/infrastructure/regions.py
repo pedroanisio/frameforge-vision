@@ -142,7 +142,7 @@ def load_image(path: "str | Path", scale: float = 1.0):
         import os
         import tempfile
 
-        from frameforge.rendering.infrastructure.cairo import rasterize_svg_cairo
+        from frameforge_render.infrastructure.cairo import rasterize_svg_cairo
 
         fd, tmp = tempfile.mkstemp(suffix=".png", prefix="fg-regions-")
         os.close(fd)
