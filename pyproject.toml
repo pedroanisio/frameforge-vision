@@ -4,7 +4,7 @@ name = "frameforge-vision"
 # document-format version (`frameforge_api.HEAD_VERSION`, 2.8.x): this package
 # reads pixels, and its releases follow its own detectors and API, not the
 # document contract.
-version = "1.0.0"
+version = "1.1.0"
 description = "Read pixels and report what is there — measurement, primitive fitting, and image→document proposals for FrameForge"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -41,9 +41,30 @@ ocr = ["pytesseract>=0.3.10"]
 # FrameForge document from the measurements needs the authoring SDK. Declared as
 # an extra rather than a hard dependency because the reverse edge is lazy too —
 # neither distribution hard-depends on the other, so there is no cycle.
-author = ["frameforge>=2.8"]
+author = ["frameforge-sdk>=1.0,<2"]
+# One lazy call rasterises an SVG through the engine's cairo lane
+# (infrastructure/regions.py); everything else needs only the SDK.
+raster = ["frameforge>=2.8,<3"]
 # The optional local VLM lane.
-vlm = ["torch>=2.2", "transformers>=4.46", "pillow>=10", "accelerate>=0.30", "num2words>=0.5"]
+#
+# `torchvision` is here for a reason worth stating, because nothing in this
+# package imports it: transformers 5.x split image processors into `pil` and
+# `torchvision` backends, and for Idefics3 — SmolVLM-256M, this lane's default
+# model — BOTH generated classes declare `_backends = ["torchvision"]`. Without
+# it every import succeeds, `available()` used to answer yes, and
+# `AutoProcessor.from_pretrained` then raised "Could not load any image
+# processor class ... Missing optional dependencies: torchvision". An extra that
+# installs a lane which cannot run is not a lighter install, it is a broken one.
+# `vlm.BACKEND_MODULES` probes this list; tests/test_vlm_backend.py pins the two
+# together in both directions.
+vlm = [
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "transformers>=4.46",
+    "pillow>=10",
+    "accelerate>=0.30",
+    "num2words>=0.5",
+]
 
 [project.urls]
 Repository = "https://github.com/pedroanisio/frameforge-vision"
@@ -51,6 +72,10 @@ Issues = "https://github.com/pedroanisio/frameforge-vision/issues"
 
 [dependency-groups]
 dev = [
+    # TOML backport for the pin gate, which reads pyproject.toml. stdlib
+    # `tomllib` is 3.11+ while requires-python is >=3.10, so the guarded
+    # `import tomllib / except: import tomli` fallback needs this to resolve.
+    "tomli>=2 ; python_version < '3.11'",
     "mypy>=1.11",
     "opencv-python-headless>=4.9",
     "pillow>=10",
@@ -65,6 +90,7 @@ dev = [
 # Drop this block (or point it at an index) to build against a published wheel.
 [tool.uv.sources]
 frameforge = { path = "../frameforge", editable = true }
+frameforge-sdk = { path = "../frameforge-sdk", editable = true }
 
 [build-system]
 requires = ["hatchling"]

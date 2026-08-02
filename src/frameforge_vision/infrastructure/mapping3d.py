@@ -131,7 +131,7 @@ def lift_to_plane(points, *, origin=(0.0, 0.0, 0.0), u=(1.0, 0.0, 0.0),
 def project_points(points_3d, *, camera: dict[str, Any] | None = None,
                    width: int | None = None, height: int | None = None) -> dict[str, Any]:
     """Project 3D points to 2D through the SDK Camera; return NDC and (optional) pixels."""
-    from frameforge.sdk.geometry import Camera, Vec3
+    from frameforge_sdk.geometry import Camera, Vec3
 
     cam_kw = dict(camera or {})
     def _vec(key, default):

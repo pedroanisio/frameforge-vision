@@ -9,3 +9,4 @@ build/
 .mypy_cache/
 htmlcov/
 .coverage
+.agent-tasks/

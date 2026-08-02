@@ -247,7 +247,7 @@ def build_document(shapes: Sequence[dict[str, Any]], *, width: int, height: int,
     ``shapes`` carry points already resolved to image pixels. The page is sized to
     the source image (px), so the drawn geometry overlays the raster 1:1.
     """
-    from frameforge.sdk import DocumentBuilder, serialize
+    from frameforge_sdk import DocumentBuilder, serialize
 
     if not shapes:
         raise ValueError("no shapes to construct")

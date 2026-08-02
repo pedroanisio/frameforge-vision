@@ -87,11 +87,34 @@ to the one function that builds a document.
 | `cv` | opencv-python-headless, pillow | the classical detector lane |
 | `ocr` | pytesseract | OCR-assisted text detection |
 | `author` | frameforge | emitting FrameForge documents |
-| `vlm` | torch, transformers, accelerate | the local VLM lane |
+| `vlm` | torch, transformers, **torchvision**, pillow, accelerate, num2words | the local VLM lane |
 
 Nothing heavier than numpy is imported at module scope, so an absent extra
 produces a clear message at the call site rather than an `ImportError` on
 `import frameforge_vision`.
+
+`torchvision` is in `vlm` for a non-obvious reason worth stating once:
+transformers 5.x split image processors into `pil` and `torchvision` backends,
+and for Idefics3 — SmolVLM-256M, this lane's default model — **both** generated
+classes declare `_backends = ["torchvision"]`. Without it every import succeeds
+and `AutoProcessor.from_pretrained` then raises
+`Could not load any image processor class ... Missing optional dependencies:
+torchvision`. So the module probes for it:
+
+```python
+from frameforge_vision import vlm
+
+vlm.available()          # True only if the lane can actually run
+vlm.missing_backends()   # ('torchvision',) — exactly what to install
+vlm.install_hint()       # one string a caller can show the user
+```
+
+`available()` answers *usable*, not *importable*: callers use it to return an
+install hint instead of a traceback, which it cannot do if it says yes to an
+environment where the processor will not load. `describe_image` refuses with
+that same hint, and translates any load failure the probe could not foresee into
+a `RuntimeError` naming the fix rather than letting a third-party `ValueError`
+escape.
 
 ---
 

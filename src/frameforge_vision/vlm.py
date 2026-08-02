@@ -21,6 +21,7 @@ Boundary: stdlib + optional external ML libs only (no ``tooling``).
 """
 from __future__ import annotations
 
+import importlib.util
 import io
 import os
 from typing import Any, Optional, Union
@@ -29,15 +30,54 @@ DEFAULT_MODEL = os.environ.get("FG_VLM_MODEL", "HuggingFaceTB/SmolVLM-256M-Instr
 _CACHE: dict[str, Any] = {}
 
 
+#: Every module the lane needs at RUNTIME, not just to import this file.
+#:
+#: ``torchvision`` is the non-obvious one and the reason this list exists.
+#: transformers 5.x split image processors into `pil` and `torchvision`
+#: backends; for Idefics3 — SmolVLM, the default model — BOTH generated classes
+#: declare ``_backends = ["torchvision"]``, so a torch-only environment loads
+#: the model and then fails inside ``AutoProcessor.from_pretrained``. Probing it
+#: here is what keeps :func:`available` an honest gate.
+BACKEND_MODULES: tuple[str, ...] = ("torch", "transformers", "PIL", "torchvision")
+
+
+def install_hint() -> str:
+    """One string every caller can show when the lane is unusable."""
+    return (
+        "install the optional `vlm` extra: "
+        "`pip install 'frameforge-vision[vlm]'` (or `uv sync --extra vlm`) — "
+        "it carries torch, transformers, Pillow and torchvision (the image-processor "
+        "backend transformers 5.x requires). CPU is fine; the default "
+        f"{DEFAULT_MODEL} is ~0.5GB and downloads on first use."
+    )
+
+
+def missing_backends() -> tuple[str, ...]:
+    """The :data:`BACKEND_MODULES` that cannot be imported, in declaration order.
+
+    Resolved with :func:`importlib.util.find_spec`, so asking the question never
+    pays torch's import cost. A ``find_spec`` that raises (a half-installed or
+    namespace-shadowed package) counts as missing: unusable is absent.
+    """
+    missing: list[str] = []
+    for module in BACKEND_MODULES:
+        try:
+            present = importlib.util.find_spec(module) is not None
+        except (ImportError, ValueError, AttributeError):
+            present = False
+        if not present:
+            missing.append(module)
+    return tuple(missing)
+
+
 def available() -> bool:
-    """True if the optional ``vlm`` group (torch + transformers + PIL) is importable."""
-    try:
-        import PIL.Image  # noqa: F401
-        import torch  # noqa: F401
-        import transformers  # noqa: F401
-        return True
-    except Exception:
-        return False
+    """True if the optional ``vlm`` extra is installed AND usable.
+
+    "Usable" is the point: this gate exists so callers can return an install
+    hint instead of a traceback, which it cannot do if it answers yes to an
+    environment where the processor will not load.
+    """
+    return not missing_backends()
 
 
 def _to_pil(image: Union[str, bytes, "os.PathLike[str]", Any]):
@@ -49,7 +89,8 @@ def _to_pil(image: Union[str, bytes, "os.PathLike[str]", Any]):
     return Image.open(os.fspath(image)).convert("RGB")
 
 
-def _load(model_id: str):
+def _load_processor_and_model(model_id: str):
+    """Load (and cache) the processor + model for ``model_id``."""
     if model_id in _CACHE:
         return _CACHE[model_id]
     import torch
@@ -65,6 +106,24 @@ def _load(model_id: str):
     return proc, mdl
 
 
+def _load(model_id: str):
+    """:func:`_load_processor_and_model`, with backend gaps translated.
+
+    :data:`BACKEND_MODULES` cannot foresee every split — another model family,
+    a future transformers release — so the load is wrapped as well as gated. A
+    third-party ``ValueError`` about a missing dependency is re-raised as a
+    ``RuntimeError`` carrying both the original text and the install command,
+    because the caller's contract is "advisory answer or actionable error",
+    never "a traceback from inside somebody else's `from_pretrained`".
+    """
+    try:
+        return _load_processor_and_model(model_id)
+    except (ValueError, ImportError, OSError) as exc:
+        raise RuntimeError(
+            f"the local VLM could not load {model_id!r}: {exc} — {install_hint()}"
+        ) from exc
+
+
 def describe_image(
     image: Union[str, bytes, "os.PathLike[str]", Any],
     prompt: str = "Describe this image in one or two sentences.",
@@ -78,11 +137,10 @@ def describe_image(
     install hint if the ``vlm`` group is not available. The result is advisory
     (see the module contract) — never a measurement.
     """
-    if not available():
+    missing = missing_backends()
+    if missing:
         raise RuntimeError(
-            "the local VLM needs the 'vlm' group: "
-            "`uv pip install torch transformers pillow accelerate` "
-            "(CPU is fine; a small model like SmolVLM-256M is the default)."
+            f"the local VLM lane is missing {', '.join(missing)} — {install_hint()}"
         )
     import torch
     proc, mdl = _load(model or DEFAULT_MODEL)
@@ -96,4 +154,11 @@ def describe_image(
     return decoded.split("Assistant:")[-1].strip()
 
 
-__all__ = ["available", "describe_image", "DEFAULT_MODEL"]
+__all__ = [
+    "BACKEND_MODULES",
+    "DEFAULT_MODEL",
+    "available",
+    "describe_image",
+    "install_hint",
+    "missing_backends",
+]

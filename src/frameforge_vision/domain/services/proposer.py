@@ -2,7 +2,7 @@
 
 Depends only on the :class:`Detector` and :class:`ObservationMapper` ports. The
 FrameForge envelope is assembled with the SDK's own authoring API
-(:class:`frameforge.sdk.author.DocumentBuilder`) rather than a hand-rolled dict,
+(:class:`frameforge_sdk.author.DocumentBuilder`) rather than a hand-rolled dict,
 so the document contract lives in one place (SDK reuse, not a fork).
 """
 from __future__ import annotations
@@ -65,7 +65,7 @@ class Proposer:
         # importing the authoring SDK at module scope is backwards — it made the
         # pure measurement core (2k LOC, numpy only) drag in a 24k-line SDK.
         # Import it where a document is actually built.
-        from frameforge.sdk.author import DocumentBuilder
+        from frameforge_sdk.author import DocumentBuilder
         builder = DocumentBuilder(title=title, profile=self._profile, lang=self._lang)
         page = builder.page(
             "proposed",

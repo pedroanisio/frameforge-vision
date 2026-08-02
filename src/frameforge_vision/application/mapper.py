@@ -1,6 +1,6 @@
 """Default mapper: one :class:`Observation` → one FrameForge object dict.
 
-Stroke geometry goes through the SDK's :func:`frameforge.sdk.paint.stroke`
+Stroke geometry goes through the SDK's :func:`frameforge_sdk.paint.stroke`
 helper, which emits the P3-correct inline ``stroke_style`` bundle (paint in
 ``stroke``, geometry in ``stroke_style``). No bespoke stroke-token registry —
 the SDK already owns that contract.
@@ -110,7 +110,7 @@ class DefaultObservationMapper:
         # package. Importing the authoring SDK at module scope would make
         # `frameforge-vision` unusable without it, when measuring an image needs
         # no authoring at all.
-        from frameforge.sdk.paint import stroke as stroke_fields
+        from frameforge_sdk.paint import stroke as stroke_fields
         obj.update(stroke_fields(float(width), color=color))
 
     @staticmethod

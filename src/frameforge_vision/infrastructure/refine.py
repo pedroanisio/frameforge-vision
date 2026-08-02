@@ -263,7 +263,7 @@ def _rebuild_outline(obj, prov, spine, width):
     Non-geometric fields (fill, id, decorative, stroke, style, …) carry over;
     the provenance meta is refreshed by stroke_outline itself, so the refined
     object stays byte-consistent with its own parameters."""
-    from frameforge.sdk.outline import stroke_outline
+    from frameforge_sdk.outline import stroke_outline
 
     from ..domain.spine_fit import spine_profile
 
@@ -427,7 +427,7 @@ def refine_geometry(
             spine, width = _apply_geo_params(prov, v)
             if width <= 1.0:
                 return float("inf"), None
-            from frameforge.sdk.outline import stroke_outline
+            from frameforge_sdk.outline import stroke_outline
 
             from ..domain.spine_fit import spine_profile
 
