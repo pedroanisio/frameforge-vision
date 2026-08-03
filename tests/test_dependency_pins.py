@@ -1,9 +1,9 @@
 """Family dependency pins must be bounded, self-consistent, and actually locked.
 
-The FrameForge packages resolve each other by path in development and by
-version once published, which hides pin defects: everything works locally
-because the sibling checkout is whatever is on disk, and the declared range is
-only exercised by someone installing from an index. An audit across the eight
+The FrameForge packages resolve each other from their public repositories in
+development and by version once published, which hides pin defects: the source
+entry wins whatever the declared range says, so a stale range is only exercised
+by someone installing from an index. An audit across the eight
 family repositories found three kinds of defect that a local test run would
 never surface —
 
@@ -11,8 +11,8 @@ never surface —
   future major;
 * an **uncapped** dependency on a pre-1.0 package, where the next minor is
   allowed to break by convention;
-* a **lockfile recording a version the sibling no longer has** — the worst kind,
-  because `uv sync` reproduces a resolution nobody has tested.
+* a **source that only exists on one machine** — the worst kind, because it makes
+  a clean clone uninstallable while every local run passes.
 
 These tests read `pyproject.toml` and `uv.lock` directly. They need no network
 and no build, so the invariant is checked on every run rather than at release.
@@ -40,7 +40,6 @@ except ModuleNotFoundError:  # Python 3.10 has no stdlib tomllib
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-SIBLINGS = ROOT.parent
 
 #: Distributions in this family. `frameforge` (the engine) has no suffix, so it
 #: is matched exactly rather than by prefix.
@@ -179,34 +178,70 @@ def _locked_family_versions() -> dict[str, str]:
 
 
 def _sibling_version(distribution: str) -> str | None:
-    path = SIBLINGS / distribution / "pyproject.toml"
-    if not path.is_file():
-        return None
-    return tomllib.loads(path.read_text(encoding="utf-8")).get("project", {}).get("version")
+    """The version a locked family package resolved to.
+
+    Read from `uv.lock`, NOT from `../<distribution>/pyproject.toml`. A sibling
+    working copy is not what this repository builds against — the lock pins a
+    commit — and requiring one is the defect this suite now guards against.
+    """
+    return _locked_family_versions().get(distribution)
 
 
-def test_the_lockfile_pins_family_versions_that_still_exist():
-    """The defect this was written for: `frameforge-vision/uv.lock` recorded
-    `frameforge-api` 1.0.0 and `frameforge-render` 1.0.0 while the checkouts
-    were 1.3.1 and 1.9.0 — a resolution three contract revisions behind, which
-    `uv sync` would faithfully reproduce."""
-    stale = []
-    for distribution, locked in _locked_family_versions().items():
-        actual = _sibling_version(distribution)
-        if actual is None:
-            continue  # sibling not checked out here; nothing to compare against
-        if actual != locked:
-            stale.append(f"{distribution}: lock has {locked}, checkout has {actual}")
-    assert not stale, (
-        "run `uv lock` — " + "; ".join(stale))
+#: `source = { git = "https://github.com/<org>/<repo>#<40-hex sha>" }`
+LOCKED_GIT_SOURCE = re.compile(
+    r'^name = "(frameforge[a-z-]*)"\nversion = "[^"]+"\n'
+    r'source = \{ git = "(?P<url>https://github\.com/[^"#]+)#(?P<rev>[0-9a-f]{40})" \}',
+    re.MULTILINE)
 
 
-def test_every_locked_family_package_is_a_real_sibling_or_absent():
-    """A locked family name that matches no checkout and no known distribution
-    is a typo or a package that was renamed out from under the lock."""
-    unknown = [name for name in _locked_family_versions()
-               if not (SIBLINGS / name).exists()]
-    assert not unknown, f"locked but no such sibling checkout: {unknown}"
+def _uv_sources(root: Path = ROOT) -> dict:
+    return _pyproject(root).get("tool", {}).get("uv", {}).get("sources", {})
+
+
+def test_no_family_source_is_a_relative_path():
+    """A clean clone must install. This is the gate for it.
+
+    Until 2026-08-03 every family source was `path = "../frameforge-*"`, so
+    `uv sync` — the documented install, and what every CI job runs on a bare
+    checkout — failed with `Distribution not found at: .../frameforge-api`
+    unless five sibling working copies happened to sit next to this one.
+
+    A path source is not merely local, either: uv reads a git dependency's own
+    `[tool.uv.sources]` and rewrites `path = "../x"` into
+    `git+<that repo>#subdirectory=../x`, which cannot exist. One such entry in
+    one sibling breaks resolution for every consumer of it.
+    """
+    offenders = {name: source for name, source in _uv_sources().items()
+                 if isinstance(source, dict) and "path" in source}
+    assert not offenders, (
+        "family sources must be git URLs, not paths on one machine: "
+        f"{sorted(offenders)}")
+
+
+def test_every_locked_family_package_is_pinned_to_a_family_repository():
+    """Each family package in the lock resolves from its own public repository
+    at a full commit sha — so the resolution is reproducible off this machine,
+    and a locked name that matches no repository is a typo or a rename.
+
+    A repository may legitimately ship no lockfile: `frameforge-mcp` cannot
+    produce a portable one until the family is published, because it may not
+    declare a source for the engine (see its README), and a lock nobody can
+    reproduce is worse than none.
+    """
+    lock = ROOT / "uv.lock"
+    if not lock.is_file():
+        pytest.skip("no committed lockfile in this repository")
+    text = lock.read_text(encoding="utf-8")
+    pinned = {m.group(1): (m.group("url"), m.group("rev"))
+              for m in LOCKED_GIT_SOURCE.finditer(text)}
+    locked = set(_locked_family_versions()) - {_pyproject().get("project", {})["name"]}
+    missing = sorted(locked - set(pinned))
+    assert not missing, (
+        "locked family packages with no git pin (a path or index source has "
+        f"crept back in — run `uv lock`): {missing}")
+    mismatched = sorted(name for name, (url, _) in pinned.items()
+                        if not url.endswith(f"/{name}"))
+    assert not mismatched, f"locked from a repository that is not its own: {mismatched}"
 
 
 # --------------------------------------------------------------------------- #
