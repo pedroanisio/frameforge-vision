@@ -85,12 +85,15 @@ dev = [
     "ruff>=0.6",
 ]
 
-# Develop against the sibling checkout: `frameforge` is not on PyPI, and the
-# `author` extra must resolve to the local engine while the split settles.
-# Drop this block (or point it at an index) to build against a published wheel.
+# Nothing in the family is on PyPI yet, so the siblings resolve from their
+# public repositories — NOT from `../frameforge`. A relative path here is not a
+# local convenience: uv reads this table when another project resolves THIS one
+# from git, and rewrites `path = "../x"` into `git+<this repo>#subdirectory=../x`,
+# which cannot exist. Family rule: intra-family sources are git URLs, never paths.
+# Point this block at an index to build against published wheels.
 [tool.uv.sources]
-frameforge = { path = "../frameforge", editable = true }
-frameforge-sdk = { path = "../frameforge-sdk", editable = true }
+frameforge = { git = "https://github.com/pedroanisio/frameforge" }
+frameforge-sdk = { git = "https://github.com/pedroanisio/frameforge-sdk" }
 
 [build-system]
 requires = ["hatchling"]
