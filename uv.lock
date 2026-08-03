@@ -342,8 +342,8 @@ wheels = [
 
 [[package]]
 name = "frameforge"
-version = "2.8.2"
-source = { editable = "../frameforge" }
+version = "2.11.0"
+source = { git = "https://github.com/pedroanisio/frameforge#1ee80a685e335b81b581efef8fd2c9a9e6ac7e89" }
 dependencies = [
     { name = "frameforge-api" },
     { name = "frameforge-render" },
@@ -352,134 +352,29 @@ dependencies = [
     { name = "pyyaml" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "frameforge-api", editable = "../frameforge-api" },
-    { name = "frameforge-render", editable = "../frameforge-render" },
-    { name = "frameforge-sdk", editable = "../frameforge-sdk" },
-    { name = "pydantic", specifier = ">=2" },
-    { name = "pyyaml", specifier = ">=6" },
-]
-
-[package.metadata.requires-dev]
-browser = [{ name = "playwright", specifier = ">=1.44" }]
-dev = [
-    { name = "frameforge-mcp", editable = "../frameforge-mcp" },
-    { name = "frameforge-vision", extras = ["cv", "ocr"], editable = "." },
-    { name = "hypothesis", specifier = ">=6" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2" },
-]
-mcp = [
-    { name = "cairosvg", specifier = ">=2.7" },
-    { name = "mcp", extras = ["cli"], specifier = ">=1.27,<2" },
-]
-metrics = [
-    { name = "fonttools", specifier = ">=4" },
-    { name = "frameforge-render", extras = ["fonts", "metrics"], editable = "../frameforge-render" },
-    { name = "frameforge-sdk", extras = ["metrics"], editable = "../frameforge-sdk" },
-]
-pdf = [{ name = "pymupdf", specifier = ">=1.24" }]
-pdfout = [
-    { name = "cairosvg", specifier = ">=2.7" },
-    { name = "pypdf", specifier = ">=4" },
-]
-render = [
-    { name = "matplotlib", specifier = ">=3.7" },
-    { name = "pillow", specifier = ">=10" },
-]
-vision = [{ name = "frameforge-vision", extras = ["cv", "ocr"], editable = "." }]
-vlm = [
-    { name = "accelerate", specifier = ">=0.30" },
-    { name = "num2words", specifier = ">=0.5" },
-    { name = "pillow", specifier = ">=10" },
-    { name = "torch", specifier = ">=2.2" },
-    { name = "transformers", specifier = ">=4.46" },
-]
-
 [[package]]
 name = "frameforge-api"
 version = "1.3.1"
-source = { editable = "../frameforge-api" }
+source = { git = "https://github.com/pedroanisio/frameforge-api#7f6a4f6b08a252a6a8f3a90e7f60aff96523830b" }
 dependencies = [
     { name = "pydantic" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "pydantic", specifier = ">=2" },
-    { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6" },
-]
-provides-extras = ["yaml"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.11" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-cov", specifier = ">=5" },
-    { name = "pyyaml", specifier = ">=6" },
-    { name = "ruff", specifier = ">=0.6" },
 ]
 
 [[package]]
 name = "frameforge-render"
 version = "1.9.0"
-source = { editable = "../frameforge-render" }
+source = { git = "https://github.com/pedroanisio/frameforge-render#decef9387aa279e892324ffac35b666f65c503f7" }
 dependencies = [
     { name = "pyphen" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "cairosvg", marker = "extra == 'cairo'", specifier = ">=2.7" },
-    { name = "fonttools", marker = "extra == 'metrics'", specifier = ">=4.53" },
-    { name = "frameforge-fonts", marker = "extra == 'fonts'", editable = "../frameforge-fonts" },
-    { name = "jsonschema", marker = "extra == 'loader'", specifier = ">=4" },
-    { name = "numpy", marker = "extra == 'raster'", specifier = ">=1.24" },
-    { name = "pillow", marker = "extra == 'raster'", specifier = ">=10" },
-    { name = "playwright", marker = "extra == 'browser'", specifier = ">=1.44" },
-    { name = "pyphen", specifier = ">=0.15" },
-    { name = "pyyaml", marker = "extra == 'loader'", specifier = ">=6" },
-]
-provides-extras = ["metrics", "browser", "cairo", "raster", "loader", "fonts"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "frameforge-fonts", editable = "../frameforge-fonts" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pyyaml", specifier = ">=6" },
-    { name = "ruff", specifier = ">=0.6" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2" },
-]
-
 [[package]]
 name = "frameforge-sdk"
-version = "1.1.0"
-source = { editable = "../frameforge-sdk" }
+version = "1.2.0"
+source = { git = "https://github.com/pedroanisio/frameforge-sdk#aff7759ae9868ba8e4fb8eb732303f82b610cdbb" }
 dependencies = [
     { name = "frameforge-api" },
     { name = "pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fonttools", marker = "extra == 'metrics'", specifier = ">=4.53" },
-    { name = "frameforge-api", editable = "../frameforge-api" },
-    { name = "frameforge-fonts", marker = "extra == 'metrics'", editable = "../frameforge-fonts" },
-    { name = "frameforge-vision", marker = "extra == 'svg'", editable = "." },
-    { name = "pyyaml", specifier = ">=6" },
-]
-provides-extras = ["svg", "metrics"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "frameforge-render", editable = "../frameforge-render" },
-    { name = "mypy", specifier = ">=1.11" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-cov", specifier = ">=5" },
-    { name = "pyyaml", specifier = ">=6" },
-    { name = "ruff", specifier = ">=0.6" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2" },
 ]
 
 [[package]]
@@ -530,8 +425,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=0.30" },
-    { name = "frameforge", marker = "extra == 'raster'", editable = "../frameforge" },
-    { name = "frameforge-sdk", marker = "extra == 'author'", editable = "../frameforge-sdk" },
+    { name = "frameforge", marker = "extra == 'raster'", git = "https://github.com/pedroanisio/frameforge" },
+    { name = "frameforge-sdk", marker = "extra == 'author'", git = "https://github.com/pedroanisio/frameforge-sdk" },
     { name = "num2words", marker = "extra == 'vlm'", specifier = ">=0.5" },
     { name = "numpy", specifier = ">=1.24" },
     { name = "opencv-python-headless", marker = "extra == 'cv'", specifier = ">=4.9" },
